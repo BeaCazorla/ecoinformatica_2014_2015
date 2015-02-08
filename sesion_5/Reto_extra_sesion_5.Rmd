@@ -1,0 +1,39 @@
+---
+title: 'ECOINFORMÁTICA: Sesión 4. Técnicas de Análisis de Inteligencia Artificial'
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+¿Quieres practicar? Muestre un informe en R-Markdown con una agrupación de los píxeles que permita distinguir al menos: cielo, suelo desnudo, y pinos.
+
+```{r}
+# Instalamos y cargamos los paquetes que necesitaremos
+#install.packages("raster",dep=T)
+library(raster)
+
+# Establecemos nuestro directorio de trabajo
+
+setwd("/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi")
+
+# Obtenemos los ficheros de imágenes para una hora determinada
+hora <- "12"
+imagenes <- list.files(path="/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi", full.names = TRUE, 
+                       pattern=paste("_", hora, "..\\.jpg\\.asc$", sep=""))
+
+# Visualizamos una de las imágenes
+imagen <- raster(imagenes[[1]])
+plot(imagen)
+
+# Exploramos nuestros datos
+hist(imagen[]) 
+
+# Hacemos un k-means con tres grupos: cielo, suelo desnudo y pinos
+mi_cluster <- kmeans(imagen[], 3, iter.max = 200, nstart = 3)
+# Exploramos la nueva variable
+str(mi_cluster)
+is.list(mi_cluster)
+
+# Creamos una imagen raster con el resultado
+cluster_ndvi <- raster(imagen)
+cluster_ndvi[] <- mi_cluster$cluster 
+plot(cluster_ndvi)
+```

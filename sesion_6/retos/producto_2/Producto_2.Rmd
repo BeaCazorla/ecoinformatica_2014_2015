@@ -1,0 +1,182 @@
+---
+title: 'ECOINFORMÁTICA: Reto final - Producto 2'
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+
+**Caracterización de poblaciones de robledal en función de variables biofísicas**
+=
+
+**Resumen**
+=
+En este producto realizaremos una clasificación de los distintos subtipos o poblaciones de ecosistemas teniendo en cuenta variables climáticas, edáficas y de funcionamiento ecosistémico. El producto final será un mapa o una tabla que muestre a qué grupo pertenece cada píxel del mapa de distribución del robledal en Sierra Nevada. Es decir, se indicarán los distintos “tipos” de robledal en función de las variables biofísicas utilizadas en la clasificación.
+
+**Introducción**
+=
+
+En Sierra Nevada se han realizado numerosos estudios en los que se han analizado de forma puntual diferentes aspectos de la ecología de *Quercus pyrenaica* : análisis de los factores abióticos que afectan al establecimiento de semillas (Baraza et al. 2004); utilización de plantas nodrizas para la restauración de robledales (Castro et al. 2006); estudios de reclutamiento de juveniles bajo diferentes tratamientos de contenido hídrico (Mendoza et al. 2009); efectos de la herviboría (Baraza et al. 2010); efectos de la heterogeneidad ambiental generada por plantas nodriza sobre el crecimiento y la supervivencia de *Q. pyrenaica* (Gómez-Aparicio et al. 2005), etc. Todos estos estudios se refieren a aspectos concretos ecológicos y se han llevado a cabo en algunas poblaciones de los robledales de Sierra Nevada, y aunque aportan un gran conocimiento en detalle de la ecología de esta especie, no analizan las diferencias entre las diferentes poblaciones de Sierra Nevada.
+
+Nuestro objetivo será clasificar los distintos subtipos o poblaciones de roble mejolo (*Quercus pyrenaica*) teniendo en cuenta variables climáticas, edáficas y de funcionamiento ecosistémico, cuyos resultados tendrán imporantes implicaciones en la gestión y conservación de estos frágiles ecosistemas.
+
+**Material y métodos**
+=
+
+**Base de datos utilizadas**
+
+Hemos utilizado un conjunto de variables  que se pueden agrupar en función del grupo temático del que informan: topográficas, hidrográficas, climáticas, de distancia e influencia antrópica
+
+**Análisis de clasificación cluster**
+
+Para realizar la clasificación utilizaremos el análisis cluster. El análisis cluster es un conjunto de técnicas multivariantes utilizadas para clasificar a un conjunto de individuos en grupos homogéneos. El agrupamiento se basa en la idea de distancia o similitud en las observaciones.El objetivo, por tanto, es obtener clasificaciones (clusterings). Este método posee una extraordinaria importancia en la investigación científica, dado que la clasificación es uno de los objetivos fundamentales de la ciencia. El uso de esta variable sintética hace más fácil la interpretación de los patrones espaciales(Alcaraz-Segura et al.,2006) de las poblaciones de roble.
+El agrupamiento se lleva a cabo a través de el algoritmo de clasificación K-medias, que permite asignar a cada observación el cluster que se encuentra más próximo en términos del centroide (media), método utilizado en la minería de datos.
+
+A través de este análisis podemos determinar el comportamiento similiar de los diferentes núcleos existentes en Sierra Nevada en función de las diferentes variables ambientales.
+
+Los análisis se realizarán con el software estadístico R version 3.0.2. Con el que llevaremos a cabo el siguiente procedimiento:
+
+En primer lugar, instalamos y cargamos los paquetes que nos serán necesarios:
+```{r}
+#install.packages('raster',dep=T) # Instalamos únicamente este paquete porque los demás están instalados para el producto 1.
+library(raster) # Para trabajar con datos raster
+library(sp) # Para establecer las coordendas
+library(classInt) # Para determinar clases dentro de nuestros datos
+library(RColorBrewer) # Para pintar el mapa
+```
+A continuación establecemos nuestro directorio de trabajo y cargamos los datos con los que vamos a trabajar.
+
+```{r}
+# Establecemos el directorio de trabajo
+setwd("~/ecoinformatica_2014_2015/sesion_6/retos/producto_2")
+
+# Leemos nuestros datos
+robles<-read.csv("~/ecoinformatica_2014_2015/sesion_6/retos/producto_2/robles_ecoinfo.csv",header=TRUE,sep=",")
+
+# Exploración de datos
+str(robles)
+head(robles)
+
+# Ya hemos visto con la función str() que es un data.frame, pero existe otra función que nos responde a la pregunta ¿es un data.frame(robles)?
+is.data.frame(robles)
+```
+Tras cargar y explorar nuestros datos, observamos que tenemos 2.451 observaciones de 33 variables, entre las que encontramos datos de pendiente, elevación, temperatura, precipitación,etc...
+
+El siguiente paso será realizar un análisis cluster para establecer grupos de similiaridad en cuanto a las respuestas a variables biofísicas de los robles de Sierra Nevada. Para llevarlo a cabo, tendremos en cuenta únicamente las variables biofísicas, excluyendo de nuestro análisis por tanto, las coordenadas x e y. El número inicial de grupos elegido es 2, con un máximo de 200 interacciones. Continuaremos realizando análisis cluster para un mayor número de grupos, p.ej: 3 y 4, y nos quedaremos con un número de agrupaciones según su relevancia ecológica
+
+En estos análisis, decidir el número óptimo de agrupaciones de los datos es una cuestión fundamental. Según Fernandez et al. 2010, las clasificaciones basadas en razonamientos ecológicos introducen cierto grado de subjetividad. Para evitarlo, existen métodos estadíticos como el "Gap" (Tibshirani et al., 2001). En nuestro producto, no estableceremos una aproximación tan exhaustiva, pues nos basta con el conocimiento experto.
+```{r}
+## Le hacemos un análisis CLUSTER sin tener en cuenta las variables x e y, ya que son las coordenadas, y no tiene sentido ecológico que nos clasifique las poblaciones en función de estas [,-c(1,2)]
+cluster2 <- kmeans(robles[,-c(1,2)], 2, iter.max = 200) # dos grupos cluster con 200 interacciones
+cluster3 <- kmeans(robles[,-c(1,2)], 3, iter.max = 200) # tres grupos cluster con 200 interacciones
+cluster4 <- kmeans(robles[,-c(1,2)], 4, iter.max = 200) # cuatro grupos cluster con 200 interacciones
+
+
+```
+En el paso anterior hemos realizado distintos cluster's, agrupados en dos, tres y cuatro grupos. A cada cluster le realizaremos todo el procedimiento para la obtención de un mapa a partir del que podremos establecer los criterios ecológicos para decantarnos por un número de agrupaciones.
+
+Por lo tanto, continuamos con el proceso para los tres tipos de agrupaciones:2,3 y 4:
+```{r}
+# Asignamos a n_cluster el valor de cluster obtenido para cada píxel en nuestro análisis
+n_cluster2<-cluster2$cluster
+n_cluster3<-cluster3$cluster
+n_cluster4<-cluster4$cluster
+
+# Combinamos nuestra base de datos inicial con el valor de cluster obtenido para cada píxel
+robles_cluster2<- cbind(robles, n_cluster2) # Esta función combina objetos por filas o columnas. En la pestaña "Environment" podemos (y debemos) explorar la nueva tabla.
+robles_cluster3<- cbind(robles, n_cluster3) 
+robles_cluster4<- cbind(robles, n_cluster4) 
+
+
+```
+Si deseamos un data.frame sólamente con los valores de un cluster  (por ejemplo, el 2) y sus coordenadas haríamos lo siguiente
+
+```{r}
+# Data.frame sólamente con los valores de cluster y sus coordenadas 
+#only_cluster<-robles_cluster2[,c(1,2,34)] 
+```
+En este caso nos da igual con lo que trabajar, pero puede ser recomendable no eliminar las demás variables, pues en pasos posteriores de nuestro trabajo podríamos necesitarlas, por lo tanto no las eliminamos.
+
+Para el primer caso, tenemos nuestro data.frame con las variables biofísicas, el cluster y su x e y; en el segundo tendremos sólamente los datos de clasificación (cluster) y las variables x e y.
+
+Tras decidir no eliminarlas, y obtenido por tanto nuestro data.frame con las variables de interés, hemos de comenzar el procedimiento para pintar el mapa.En primer lugar, definimos las coordenadas de los puntos y su sistema de proyección, en este caso WFS84.
+```{r}
+# Definimos las coordenadas de los puntos
+coordinates(robles_cluster2) =~x+y
+coordinates(robles_cluster3) =~x+y
+coordinates(robles_cluster4) =~x+y
+
+
+
+# Definimos el sistema de coordenadas WGS84
+proj4string(robles_cluster2)=CRS("+init=epsg:23030")
+proj4string(robles_cluster3)=CRS("+init=epsg:23030")
+proj4string(robles_cluster4)=CRS("+init=epsg:23030")
+
+```
+Una vez georreferenciado, sólamente nos queda realizar el producto final, es decir, el mapa donde aparecerán los distintos cluster o grupos de clasificación, para ello, realizaremos lo siguiente.
+
+```{r, echo=FALSE}
+# Obtenemos n_cluster colores para una paleta de colores que se llama "Spectral", para cada cluster creado
+plotclr2 <- rev(brewer.pal(robles_cluster2$n_cluster2, "Spectral"))
+plotclr3 <- rev(brewer.pal(robles_cluster3$n_cluster3, "Spectral"))
+plotclr4 <- rev(brewer.pal(robles_cluster4$n_cluster4, "Spectral"))
+
+
+# En el siguiente paso pintamos el plot, que son nuestros resultados.
+```
+
+**Resultados**
+=
+```{r}
+# Creamos el plot, asignando el color en función del cluster al que pertenece
+plot(robles_cluster2, col=plotclr2[robles_cluster2$n_cluster2], pch=19, cex = .6, main = "Mapa de dos grupos de roble")
+plot(robles_cluster3, col=plotclr3[robles_cluster3$n_cluster3], pch=19, cex = .6, main = "Mapa de tres grupos de roble")
+plot(robles_cluster4, col=plotclr4[robles_cluster4$n_cluster4], pch=19, cex = .6, main = "Mapa de cuatro grupos de roble")
+
+```
+
+Hemos obtenido distintos mapas para cada uno de los grupos, 2,3 y 4. En los resultados de **dos** grupos cluster de robledales, observamos una clara diferenciación entre las poblaciones de robledal de la ladera norte y de la ladera sur según las variables biofísicas que le afectan. Una variable de que afecta pues con gran evidencia es la orientación norte o sur de la ladera, ya que es conocido que los robledales necesitan unas condiciones de humedad mínimas durante el periodo vegetativo (Martinez-Parras & Molero, 1982) y en Sierra Nevada los robledales, que se corresponden con su límite mas meridional de distribución, consiguen este aporte situándose en lugares donde las condiciones microclimáticas les permitan conseguir este aporte hídrico. 
+
+Al agrupar las poblaciones en **tres** zonas diferentes según las variables biofísicas observamos que la discriminación entre las diferentes poblaciones de Sierra Nevada nos ha aportado una diferenciación en tres grupos de poblaciones: dos situados en la zona norte (uno hacia el nordeste y otro más hacia el norte-noroeste) y otro situado al sur. En los del sur existen algunas zonas de robledal que responden de forma similar a los del norte, pero estos constituyen una minoría. Por tanto, en términos generales sí que podemos hacer dicha distinción en tres poblaciones.
+La agrupación en **cuatro** clases es muy similar a la de tres, existiendo una ausencia de un cambio significativo al aumentar el número de clasificación, es por ello por lo que decidimos no continuar agrupando en un número mayor de grupos y la razón por la que nos quedamos con tres, pues parece el resultado más apropiado para trabajar con grupos funcionales de robles. Decidimos quedarnos con la clasificación de tres grupos funcionales, debido a que existen diferencias respecto a la clasificación de dos grupos, mientras que no existen diferencias con el de cuatro.
+
+
+Un procedimiento que podríamos realizar con datos obtenidos, sería establecer relaciones entre la variables y los tipos de cluster mediante gráficos, por ejemplo:
+```{r}
+
+## Gráfico que  muestra la distribución de los grupos de cluster en relación con las variables 
+plot(robles_cluster3$P_ver~robles_cluster3$tminV, col=as.numeric(robles_cluster3$n_cluster3), pch=19, cex=.5, xlab="Temperatura mínima en Verano", ylab="Precipiación en Verano", main= "Agrupación de robledales en función de dos variables biofísicas")
+
+```
+En el ejemplo anterior observamos, la existencia de un grupo funcional que responde a los valores más altos de precipitación durante el verano y el menor rango de temperaturas dentro de las mínimas de verano, mientras que los demás grupos se encuentran en todas las temperaturas mínimas y precipitaciones de verano. Este tipo de relaciones se podrían ir definiendo para las distintas variables y determinar a qué par de variables podrían responder algunos grupos de nuestro análisis cluster.
+
+** Discusión y conclusiones**
+=
+
+Tanto la clasificación en dos grupos como en tres de respuesta a factores ambientales de las poblaciones de roble nos sería válida. La primera aproximación sería más general, y por tanto podría servirnos, pero para la gestión los resultados más exahustivos posibles, por lo tanto conviene decantarnos por la clasificación de tres poblaciones con distintas respuestas.
+
+Podemos concluir que, este tipo de producto, sirve como análisis preliminar que permite optimizar esfuerzos a la hora de realizar estudios específicos sobre diferentes aspectos relacionados con el cambio global, ya que identifica los diferentes grupos de poblaciones de un ecosistema sensible y de alta fragilidad como son los robledales, en una región montañosa, lugares de alerta temprana de los efectos del cambio global.
+
+Por tanto, hemos de destacar que esta clasificación aporta conocimiento científico para la gestión, conservación y restauración de los robledales.
+
+
+**Bibliografía**
+=
+
+
+Alcaraz-Segura, D.; Paruelo, J. & Cabello, J.(2006). Identification of current ecosystem functional types in the Iberian Peninsula. Global Ecology and Biogeography, Vol.15, No.2, pp. 200-212,
+
+Baraza, E., Gómez, J.M., Hódar, J.A. & Zamora, R. (2004) Herbivory has a greater impact in shade than insun : response of Quercus pyrenaica seedlings to multifactorial environmental variation. Canadian Journal of Botany, Vol. 364, 357-364.
+
+Baraza, E., Zamora, R. & Hódar, J.A. (2010) Species-specific responses of tree saplings to herbivory in contrasting lighte environments: an experimental approach. Ecoscience, Vol. 17, 156-165.
+
+Castro, J., Zamora, R. & Hódar, J.A. (2006). Restoring Quercus pyrenaica forests using pioneer shrubs as nurse plants. Applied Vegetation Science, Vol.9, 137-142.
+
+Fernández, N., Paruelo, J. M., & Delibes, M. (2010). Ecosystem functioning of protected and altered Mediterranean environments: A remote sensing classification in Doñana, Spain. Remote Sensing of Environment, Vol.114,No.1, 211-220.
+
+Gómez-Aparicio, L., Valladares, F., Zamora, R. & Quero, J.L. (2005). Response of tree seedlings to the abiotic heterogeneity generated by nurse shrubs: an experimental approach at different scales. Ecography, Vol.28, 757-768.
+
+Martínez-Parras, J.M. & Molero, J. (1982) Ecología y fitososociología de Quercus pyrenaica. Willd. en la provincia Bética. Los melojares béticos y sus etapas de sustitución. Lazaroa, Vol.4, 91-104.
+
+Mendoza, I., Zamora, R. & Castro, J. (2009). A seeding experiment for testing tree-community recruitment under variable environments: Implications for forest regeneration and conservation in Mediterranean habitats. Biological Conservation, Vol.142, 1491-1499.
+
+Tibshirani, R., Walther, G., & Hastie, T. (2001). Estimating the number of clusters in a data set via the gap statistic. Journal of the Royal Statistical Society Series B-Statistical Methodology, Vol.63, 411−423.

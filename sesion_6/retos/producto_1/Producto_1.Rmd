@@ -1,0 +1,305 @@
+---
+title: 'ECOINFORMÁTICA: Reto final - Producto 1'
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+
+
+
+**Caracterización del funcionamiento del ecosistema y de las variables ambientales que lo condicionan**
+=
+
+**Resumen**
+=
+Gracias a la gran cantidad de información procedente de sensores remotos, es posible conocer la evolución temporal de variables como la cobertura de nieve, índice de vegetación o temperatura del suelo en los distintos tipos de ecosistemas diana. Nuestro objetivo es evaluar la tendencia del NDVI y la cobertura de nieve para los robledales de Sierra Nevada. Se trata de caracterizar la tendencia de NDVI y en la duración de la nieve para cada píxel ocupado por robledal y año hidrológico. Nuestro resultado será un mapa que muestre las tendencias en la duración de la nieve para cada píxel en toda la serie temporal (2000-2012).
+
+**Introducción**
+=
+
+Actualmente, la caracterización de funcionamiento de los ecosistemas es crucial para la gestión de los mismos, debido a distintas razones (Cabello et al., 2008). En primer lugar, la evaluación de las características funcionales de los ecosistemas como la dinámica de ganancias de carbono, complementa claramente la descripción tradicional de los ecosistemas basada únicamente en las características estructurales de la vegetación (como la fisonomía, especies dominantes, o la composición florística)(Mueller-Dombois y Ellenberg, 1974; Stephenson, 1990; Alcaraz-Segura et al, 2009a). En segundo lugar, los atributos funcionales de los ecosistemas muestran una respuesta mucho más rápida a los cambios ambientales que los estructurales (Milchunas y Lauenroth., 1995; Wiegand et al, 2004; Alcaraz-Segura et al., 2008a). En tercer lugar, los rasgos funcionales están relacionadas con los procesos ecológicos clave, los cuales proporcionan una medición directa de los servicios ecosistémicos (Oyonarte et al, 2010;. Paruelo et al, 2011;. Volante et al., en prensa). Por último,los atributos funcionales de los ecosistemas pueden ser monitoreados fácilmente y con frecuencia a través de la teledetección (Paruelo et al. 2001), herramienta muy útil para el seguimiento de la dinámica de la vegetación y sus respuetas ambientales en áreas extensas, diferentes regiones, y con cierta frecuencia (Paruelo et al, 2005; Pettorelli et al., 2005; Baldi et al, 2008;. Cabello et al, 2008;. Alcaraz-Segura et al, 2009a). El uso de la información obtenida en satélites permite el seguimiento de la integridad de los procesos ecológicos esenciales y su variabilidad espacial y temporal con la ventaja de utilizar protocolos comunes en toda la Tierra (Dale & Beyeler, 2001). En este sentido, varios trabajos han demostrado la capacidad de las series temporales de imágenes de satélite para evaluar la existencia cambios funcionales en los ecosistemas tanto a nivel regional (Baldi et al, 2008;. Alcaraz-Segura et al, 2010b.) como local (Alcaraz-Segura et al, 2008a;. Alcaraz-Segura et al, 2008b; Alcaraz-Segura et al, 2009b).
+
+En este trabajo nos centraremos en evaluar dos atributos del funcionamiento de los ecosistemas: El índice de vegetación NDVI y la dinámica de nieve. El primero es el indicador más integrador y esencial del funcionamiento de los ecosistemas (McNaughton et al. 1989; Virginia y Wall, 2001); y el segundo, en el caso de Sierra Nevada, es un atributo fundamental para el funcionamiento de ecosistemas singulares como los robledales, piornales de alta montaña, enebrales, así como para la dinámica de los ríos y riberas nevadenses (Bonet et al., 2009). 
+
+Nuestro objetivo será por tanto, la caracterización del funcionamiento de los robledales de Sierra Nevada a partir de series temporales del índice de vegetación NDVI y la tendencia de nieve.
+
+**Material y Métodos**
+=
+
+**Bases de datos**
+
+La NASA lanzó los satélites TERRA y AQUA en el año 2000 y desde entonces suministran gran cantidad de información ambiental de forma gratuita a toda la comunidad científica. Entre los múltiples productos (índices de vegetación, temperatura superficial, albedo, etc.) que suministra el sensor MODIS alojado en dichos satélites, utilizaremos el denominado índice de vegetación NDVI, y el índice normalizado de nieve (NDSI). El primero lo obtendremos del producto MOD13Q1, que posee una resolución espacial de 231 m y temporal de 16 días (Dionisio et al. 2012; Cabello et al. 2012), incluyendo la corrección geométrica y atmosférica. Para el segundo, utilizaremos el producto MOD10A2, que aporta información sobre la extensión del manto nival con una resolución espacial de 460 m y temporal de 8 días (Bonet et al. 2009). 
+
+**Análisis de Series temporales**
+
+En este producto realizaremos un análisis de las series temporales para determinar las tendencias de los atributos del funcionamiento del ecosistema. En primer lugar realizaremos todo el proceso de análisis para las tendencias de NDVI y posteriormente para las de nieve. Nos serviremos del software estadístico R version 3.0.2 (2013-09-25) para llevar a cabo nuestro producto.
+
+En primer lugar comprobamos que se corresponde con la versión indicada de R-project, establecemos nuestro directorio de trabajo e instalamos y cargamos los paquetes que necesitaremos en el análisis.
+
+```{r}
+sessionInfo() # Nos indica la versión de R y de los paquetes básicos que posee
+
+# Establecemos el directorio de trabajo
+setwd("/home/bcazorla/ecoinformatica_2014_2015/sesion_6/retos/producto_1")
+
+# Comprobamos que lo ha establecido donde le hemos indicado
+getwd()
+
+#Instalamos los paquetes que vamos a necesitar y los requerimos para poder trabajar con ellos
+#install.packages(c('Kendall','wq')) # Para realizar el test de MannKendall 
+#install.packages("classInt",dep=T) # Para establecer clases dentro de nuestras variables
+#install.packages("RColorBrewer",dep=T) # Para pintar el mapa
+#install.packages("plyr",dep=T) # Para unir dos tablas, funcion join()
+library(Kendall)  
+library(plyr)
+library(sp) # Para asignar las coordenadas, viene instalado por defecto en R
+library(classInt) 
+library(RColorBrewer) 
+``` 
+
+**Análisis de tendencias de NDVI en los Robledales de Sierra Nevada**
+
+```{r}
+## Leemos los datos de NDVI
+ndvi <- read.table('./ndvi_robledal.csv', header = TRUE, sep=';')
+## Exploramos los datos
+str(ndvi)
+head(ndvi)
+
+```
+
+Al explorar los datos hemos obtenido la siguiente información: Tenemos una base de datos (data.frame) con 23.582 observaciones de 5 variables, las variables son las siguientes: identificador del píxel, año, valor de ndvi, longitud y latitud. Es importante tener estas dos últimas variables para cada píxel, pues son las que nos ubican espacialmente para posteriormente poder representarlo en el mapa, es decir, nos georreferencian los datos.
+Una observación a tener en cuenta posteriormente derivada de la exploración de nuestros datos, es que tenemos los valores de id para cada píxel repetidos, por lo tanto, para mejorar nuestros análisis hemos de modificar esto, evitando repeticiones innecesarias.
+
+Como parte de la exploración de datos, podemos observar las tendencias generales de NDVI a lo largo de la serie temporal mediante el test de MannKendall, una prueba no paramétrica basada en rangos que tiene la ventaja de ser robusta ante la distribución no normal de los datos, la existencia de huecos y la autocorrelación temporal.
+```{r}
+## Tendencia NDVI
+ndvitrend <- MannKendall(ndvi$ndvi_i)
+ndvitrend 
+
+```
+Al visualizar los resultados nos fijamos en el valor de tau y del p-valor. El primero nos indica si ha ocurrido un aumento o disminución temporal de la variable en cuestión (en este caso NDVI), este número va desde -1 a 1, correspondiendose los valores negativos con una disminución y los valores positivos con un aumento. En los resultados obtenidos en este primer análisis exploratorio global, observamos que el valor es positivo, esto nos indica que, en términos generales, el valor de NDVI ha aumentado desde 2000 hasta 2012.
+Por otra parte, el p-valor nos indica si esta tendencia es significativa o no, la referencia para determinar este suceso es un p-valor<0.05. En este caso, podemos observar que el valor es menor de 0.05, por lo tanto dicha tendencia general de aumento en los valores de NDVI es significativa.
+
+Una vez explorados los datos, pasamos a la obtención de nuestro primer objetivo: la caracterización de la tendencia del NDVI **para cada píxel** ocupado por robledal y año hidrológico.
+Para ello, hemos de ejecutar un bucle en R project donde **para cada píxel**, obtengamos los valores de la tendencia y su significación. Estos resultados se han de guardar en una nueva tabla (data.frame) que será lo que crearemos en primer lugar. Además crearemos una tabla auxiliar compuesta por los valores del identificador del píxel, de tau y de p-valor que posteriormente rellenaremos.
+
+```{r}
+## Creamos un data.frame vacío que posteriormente se compondrá de los resultados del bucle
+mk<-data.frame()
+# Creamos un data.frame auxiliar con las variables que necesitamos, y que rellenaremos y juntaremos con el vacío
+mk_aux<-data.frame(iv_malla_modi_id=NA,tau=NA, pvalor=NA)
+```
+Anteriormente, al explorar los datos, observamos que existen distintas celdas en nuestro data.frame con el mismo valor de id del píxel, para evitar cálculos innecesarios y agilizar nuestro proceso, obtenemos un nuevo atributo con el trabajaremos que tendrá para cada píxel un sólo valor de id, para llevar a cabo este proceso aplicamos la función unique(). Tras ello, realizamos las operaciones para obtener los valores de tau y p-valor para cada píxel
+```{r}
+pixeles <- unique(ndvi$iv_malla_modi_id) # Obtenemos un valor de id para cada píxel
+
+## Tendencia para cada píxel de NDVI
+for(i in pixeles) {
+  aux<-ndvi[ndvi$iv_malla_modi_id==i, ] # aqui modifico mi data.frame, y es a lo que aplicare el siguiente paso del bucle
+                  m <-MannKendall(aux$ndvi_i) # nos genera un MannKendall, que es un elemento tipo lista, para acceder a lista...: elemento uno l[[1]]
+                  mk_aux$iv_malla_modi_id<-i # En esta linea y las dos siguientes estamos añadiendo al data.frame los valores de las variables que nos interesan
+                  mk_aux$tau<-m[[1]][1] # también podríamos poner mk$tau[1] 
+                  mk_aux$pvalor<-m[[2]][1]  
+                  mk<-rbind(mk,mk_aux)
+}
+```
+La función MannKendall() nos da una lista con los valores de tau y p-valor, para saber el lugar en el que se encuentran estos valores dentro de la lista,necesitamos consultar la ayuda de la función y fijarnos en el apartado "values". Ahí vemos que tau es el primer valor y pvalor el segundo, por tanto para extraerlos a nuestra nueva data.frame ponemos m[[1]][1] y m[[2]][1], o lo que es lo mismo m$tau[1] y m$pvalor[1]
+
+```{r}
+?MannKendall # veo que el primer de la lista es tau y el segundo pvalor
+```
+A continuación, hemos utilizado la función rbind() para insertar en la base de datos vacía los resultados con los valores de id del píxel, tau y pvalor.
+Tras ello, y con la intención de obtener la tabla definitiva que necesitamos, creamos un atributo que nos extraiga de nuestra base de datos de NDVI, los valores todas las filas de las columnas 1,4 y 5 que es donde está el id del píxel, su latitud y su longitud.
+
+```{r}
+
+## Extraigo de mis datos las todas las filas de las columnas 1,4 y 5, que es donde tengo el id del píxel (iv_malla_modi_id), la latitud y  la longitud
+datos_aux<-ndvi[,c(1,4,5)]
+datos_aux<-unique(datos_aux) # Quiero que me coja sólo los valores únicos,es decir, que no se repitan valores.
+```
+Una vez que tenemos esta información, necesito unir los valores de latitud y longitud con los de tau y p-valor para cada píxel. Uno las tablas por el id del píxel que es el campo que tienen en común.
+
+```{r}
+## Uno la tablas con la información generada en el bucle y guardada en el data.frame vacío que creamos con la tabla que posee los valores de latitud y longitud. Nuestro objetivo es tener una nueva tabla con los campos id del pixel, tau, pvalor, latitud y longitud
+mk_ndvi<-join(mk,datos_aux,by="iv_malla_modi_id")
+
+```
+
+Hemos obtenido una base de datos con las tendencias de cada píxel, su significación y su latitud y longitud. Por último, para poder pintar el mapa, que será nuestro resultado final, necesitamos georreferenciar cada píxel. Para ello, a nuestro resultado hemos de asignarle las coordenadas y el sistema de proyección, en este caso WGS84.
+
+```{r}
+## Asignamos coordenadas
+coordinates(mk_ndvi)=~lng+lat
+
+## Definimos el sistema de coordenadas WGS84
+proj4string(mk_ndvi)=CRS("+init=epsg:4326")
+```
+Para representarlos en el mapa, es conveniente dividir los distintos valores de la tendencia, así poderemos ver diferentes rangos, que posteriormente colorearemos con un "espectro" de colores, asociando cada valor de tau a un rango de color.
+```{r}
+## Dividimos los valores de tau en 5 clases
+clases <- classIntervals(mk_ndvi$tau, n = 5)
+## Obtenemos cinco colores para una paleta de colores que se llama "Spectral"
+plotclr <- rev(brewer.pal(5, "Spectral"))
+## Asociamos los valores de tau a su valor correspondiente
+colcode <- findColours(clases, plotclr)
+```
+
+**Resultados de las tendencias de NDVI**
+=
+
+Llegados a este punto, sólo nos queda visualizar nuestro mapa resultado con su leyenda. En el script de R-project, se ha realizado en un archivo pdf a parte para no tener problemas con la representación gráfica, por lo tanto, se nos genera un nuevo archivo con el mapa en nuestro directorio de trabajo. En R-markdown nos inserta la imagen en el documento creado, no habiendo sido capaces de corregir la superposición de la leyenda.
+
+```{r, echo=FALSE}
+## Crear plot
+#pdf(file='miplot_ndvi.pdf', height = 8, width = 10) # para crear el pdf en mi directorio
+plot(mk_ndvi, col=colcode, pch=19, cex = .6, main = "Mapa de tendencias de NDVI en los robledales de Sierra Nevada") # Nos muestra el mapa
+
+## Mostramos la leyenda
+legend("topright", legend=names(attr(colcode, "table")), fill=attr(colcode, "palette"), bty="n") 
+
+#dev.off # devuelve el número y el nombre del nuevo dispositivo activo (después de que se haya cerrado, en este caso nuestro pdf).
+
+```
+
+**Análisis de tendencias de la cobertura de Nieve en los Robledales de Sierra Nevada**
+
+Para estimar las tendencias en la cobertura de nieve seguimos el mismo proceso que para NDVI.
+```{r}
+# Leemos los datos
+nieve <- read.table('./nieve_robledal.csv', header = TRUE, sep=';')
+str(nieve)
+head(nieve)
+````
+En nuestra pestaña "Environment" de R-Studio observamos que tenemos 7.116 observaciones de 11 variables: para nuestro producto únicamente nos interesa el id del píxel, la cantidad de días con nieve (scd), el año, la latitud y la longitud, por tanto trabajaremos sólamente con estas.
+De nuevo, como parte de la exploración de nuestros datos, vamos a realizar un análisis de la tendencia global de los días de nieve en las zonas de robledal.
+
+```{r}
+## Tendencia NIEVE
+nievetrend<-MannKendall(nieve$scd)
+nievetrend # tendencia significativa negativa
+```
+Los resultados nos muestran una tendencia significativa negativa en los días de nieve, esto quiere decir que, en general, para los años 2000-2012 ha existido un descenso de los días con nieve en las zonas de robledal.
+
+Como ya se ha mencionado con anterioridad, el procedimiento que seguiremos para determinar la tendencia de nieve para cada pixel de robledal, será exactamente el mismo que para el análisis de la tendencia de NDVI:
+
+```{r}
+## Creamos un data frame vacío para nieve, que posteriormente rellenaremos con los campos indicados en la siguiente línea
+mk_nieve<-data.frame()
+mk_aux_nieve<-data.frame(nie_malla_modi_id=NA,tau=NA, pvalor=NA)
+
+## Calculamos la tendencia para cada píxel de la duración de los días de nieve
+pixeles <- unique(nieve$nie_malla_modi_id) # Eliminamos los valores de id del píxel repetidos
+for(i in pixeles) {
+  aux<-nieve[nieve$nie_malla_modi_id==i, ] 
+  m <-MannKendall(aux$scd) # nos genera un objeto MannKendall, tipo lista
+  mk_aux_nieve$nie_malla_modi_id<-i # añadimos id píxel al data.frame auxiliar
+  mk_aux_nieve$tau<-m[[1]][1]       # añadimos tau al data.frame aux
+  mk_aux_nieve$pvalor<-m[[2]][1]    # añadimos pvalor al data.frame aux
+  mk_nieve<-rbind(mk_nieve,mk_aux_nieve) # unimos la data.frame vacía con los la data.frame auxiliar que contiene los valores de tau y pvalor para cada píxel
+}
+
+# Extraemos de los datos toda las filas de las columnas 2, 10 y 11, que es donde tengo el valor de id del pixel, la latitud y la longitud. Se la ubicación de dichas columnas al explorar los datos con, p.ej. la función View(nieve)
+datos_aux_nieve<-nieve[,c(2,10,11)]
+datos_aux_nieve<-unique(datos_aux_nieve)
+
+# Unimos en una nueva tabla los valores de tau, pvalor con los de latitud y longitud a través del id del píxel, que es el campo común entre ambas tablas
+mk_nieve_join<-join(mk_nieve,datos_aux_nieve,by="nie_malla_modi_id")
+
+## Asignamos las coordenadas a los píxeles que hemos obtenido con tendencias de nieve y su significación
+coordinates(mk_nieve_join)=~lng+lat
+
+## Definimos el sistema de coordenadas WGS84
+proj4string(mk_nieve_join)=CRS("+init=epsg:4326")
+
+## Dividimos los valores de tau en 5 clases para representar distintos rangos en el mapa
+clases <- classIntervals(mk_nieve_join$tau, n = 5)
+
+## Obtenemos cinco colores para una paleta de colores que se llama "Spectral"
+plotclr <- rev(brewer.pal(5, "Spectral"))
+
+## Asociamos los valores de tau a su valor correspondiente
+colcode <- findColours(clases, plotclr)
+```
+
+**Resultados de la tendencia de los días de nieve**
+=
+
+Una vez realizado todo el procedimiento, sólo nos queda visualizar nuestro mapa resultado con su leyenda. Al igual que en la caracterización de NDVI, en el script de R-project se ha realizado en un archivo pdf a parte para no tener problemas con la representación gráfica. En R-markdown nos inserta la imagen en el documento creado, exisitiendo un fallo en la representación gráfica que no hemos sido capaces de corregir.
+
+```{r}
+
+## Realizamos el plot 
+#pdf(file='miplot_nieve.pdf', height = 8, width = 10) # Para generarlo en pdf
+plot(mk_nieve_join, col=colcode, pch=19, cex = .6, main = "Mapa de tendencias de los días de nieve en los robledales")
+## mostramos la leyenda
+legend("topright", legend=names(attr(colcode, "table")), fill=attr(colcode, "palette"), bty="n")
+#dev.off # control del pdf
+
+```
+
+**Discusión**
+=
+
+**Tendencia observada en el NDVI de los robledales**
+
+
+Los resultados muestran fuertes descensos de NDVI que a pesar de ser pronunciados, no implian tendencias significativas negativas en el promedio total.
+Los cambios de tendencia nos permiten detectar anomalías temporales y espaciales, una información esencial para orientar las acciones de gestión específicas en áreas particulares (Cabello et al 2012).
+
+Estos cambios en la tendencia se pueden corresponder con un deshielo más temprano, y por lo tanto mayor disponibilidad de agua y aumento de su productividad. Por otra parte, la protección del parque ha hecho que cesaran algunas formas de uso de suelo agresivas, favoreciendo por tanto el proceso de matorralización, lo que podría explicar también el aumento de la tendencia del NDVI.
+
+
+**Tendencia  observada en la duración de los días de nieve en los robledales**
+
+
+Se observa cierta heterogeneidad de tendencias, dominando sobre ellas la tendencia negativa de la duración de los días de nieve. Por lo tanto, podemos decir que en general, la duración de la cubierta de nieve ha disminuido en los últimos 10 años. Pero aunque la tendencia es negativa en la última década, no contamos con una serie temporal lo suficientemente larga como para cuantificar esta tendencia en el largo plazo.
+Lo que si está claro, es que cambios en un atributo funcional tan importante como la nieve posee consecuencias ecológicas sobre las demás comunidades, incluyendo los robledales, consecuencias que han de continuar siendo estudiadas para proponer soluciones.
+
+**Conclusiones**
+=
+En relación con nuestros resultados de NDVI y nieve, cabe esperar que existe relación entre el aumento general de dicho índice con la disminución de los días de nieve, pues como se ha comentado con anterioridad, un deshielo más temprano puede producir una mayor tasas de productividad por la disponibilidad de agua, aunque también puede dar lugar a una mayor sequía estival, al agotar las este recurso en una estación más temprana. Este conjunto de factores afectan claramente a las poblaciones de roble de Sierra Nevada, de ahí la importancia de caracterizar el funcionamiento de factores clave como estos para poder llevar a cabo una gestión adaptativa en un contexto de Cambio Global.
+
+**Bibliografía**
+=
+
+Alcaraz-Segura, D.; Baldi, G.; Durante, P. & Garbulsky, M. (2008a). Análisis de la dinámica temporal del NDVI en áreas protegidas: tres casos de estudio a distintas escalas espaciales, temporales y de gestión. Ecosistemas, Vol.17, No.3, pp. 108-117. 
+
+Alcaraz-Segura, D.; Cabello, J. & Paruelo, J. (2009a). Baseline characterization of major Iberian vegetation types based on the NDVI dynamics. Plant Ecology, Vol.202, No.1, pp. 13-29.
+
+Alcaraz-Segura, D.; Cabello, J.; Paruelo, J.M. & Delibes, M. (2008b). Trends in the surface vegetation dynamics of the National Parks ofSpain as observed by satellite sensors. Applied Vegetation Science, Vol.11, pp. 431-440.
+
+Alcaraz-Segura, D.; Cabello, J.; Paruelo, J.M. & Delibes, M. (2009b). Use of descriptors of ecosystem functioning for monitoring a national park network: A remote sensing approach. Environmental Management, Vol.43, No.1, January, pp. 38-48.
+
+Alcaraz-Segura, D.; Liras, E.; Tabik, S.; Paruelo, J. & Cabello, J. (2010b). Evaluating the Consistency of the 1982–1999 NDVI Trends in the Iberian Peninsula across Four Time-series Derived from the AVHRR Sensor: LTDR, GIMMS, FASIR, and PAL-II. Sensors, Vol.10, No.2, pp. 1291-1314.
+
+Baldi, G.; Nosetto, M.D.; Aragón, M.R.; Aversa, F.; Paruelo, J.M. & Jobbagy, E.G. (2008). Long-term satellite NDVI datasets: Evaluating their ability to detect ecosystem functional changes in South America. Sensors, Vol.8, pp. 5397-5425.
+
+Bonet, F. J., & Cayuela, L. (2009). Seguimiento de la cubierta de nieve en Sierra Nevada: tendencias en la última década y posibles implicaciones ecológicas de las mismas. In Actas del IX Congreso Nacional de la Asociación Española de Ecología Terrestre: La dimensión ecológica del desarrollo sostenible: Ecología, del conocimiento a la aplicación (p. 193).
+
+Cabello J., Fernández N., Alcaraz-Segura D., Oyonarte C., Piñeiro G., Altesor A., Delibes M., Paruelo J.M. (2012) The Ecosystem Functioning Dimension in Conservation: insights from remote sensing. Biodiversity and Conservation, Vol. 21, 3287-3305. 
+
+Cabello, J.; Alcaraz-Segura, D.; Altesor, A.; Delibes, M.; Baeza, S. & Liras, E. (2008). Funcionamiento ecosistémico y evaluación de prioridades geográficas en conservación. Ecosistemas, Vol.17, No.3, pp. 53-63. 
+
+Dale, V.H. & Beyeler, S.C. (2001). Challenges in the development and use of ecological indicators. Ecological indicators, Vol.1, No.1, pp. 3-10.
+
+Dionisio M.A., Alcaraz-Segura D., Cabello J. (2012) Satellite-Based Monitoring of Ecosystem Functioning in Protected Areas: Recent Trends in the Oak Forests (Quercus pyrenaica Willd.) of Sierra Nevada (Spain). International Perspectives on Global Environmental Change, 355-37. 
+
+McNaughton, S.J.; Oesterheld, M.; Frank, D.A. & Williams, K.J. (1989). Ecosystem-level patterns of primary productivity and herbivory in terrestrial habitats. Nature
+
+Milchunas, D. & Lauenroth, W. (1995). Inertia in plant community structure: state changes after cessation of nutrient-enrichment stress. Ecological Applications, Vol.5, No.2, pp. 452-458.
+
+Mueller-Dombois, D. & Ellenberg, H. (1974). Aims and methods of vegetation ecology, John Wiley & Sons, ISBN 978-1-930665-73-6, New York, EE.UU Stephenson, N.L. (1990). Climatic control of vegetation distribution: the role of the water balance. The American Naturalist, Vol.135, No.5, pp. 649-670. 
+
+Oyonarte, C.; Alcaraz-Segura, D.; Oyarzabal, M.; Paruelo, J.M. & Cabello, J. (2010). Sistema de apoyo a la gestión de reservas de la biosfera basado en el monitoreo de la productividad primaria: ensayo en Cabode Gata-Níjar (Almería-España), In: Reservas de la Biosfera: Su contribución a la provisión de serviciosde los ecosistemas, experiencias exitosas en Iberoamérica, Araya P, Clüsener-Godt M, (Ed.), 119-140, UNESCO, Paris.
+
+Paruelo J.M., Jobbagy E.G., Sala O.E. (2001) Current distribution of ecosystem functional types in temperate South America. Ecosystems, Vol. 4, 683–698. 
+
+Paruelo, J.; Alcaraz-Segura, D. & Volante, J.N.(2011). El seguimiento del nivel de provisión de los servicios ecosistémicos, In: Valoración de Servicios Ecosistémicos: Conceptos, Herramientas y Aplicaciones para el Ordenamiento Territorial, Laterra P, E. Jobbágy & J. Paruelo, (Ed.), 141-162, Ediciones INTA, Buenos Aires 
+
+Paruelo, J.M.; Piñeiro, G.; Oyonarte, C.; Alcaraz-Segura, D.; Cabello, J. & Escribano, P. (2005). Temporal and spatial patterns of ecosystem functioning in protected and areas in southeastern Spain. Applied Vegetation Science, Vol.8, No.1, pp. 93-102.
+
+Pettorelli N., Vik J.O., Mysterud A., Gaillard J.M., Tucker, C.J., Stenseth N.C. (2005) Using the satellite-derived NDVI to assess ecological responses to environmental change. Trends in Ecology & Evolution, Vol. 20, 503-510. 
+
+Virginia, R.A., Wall, D.H. 2001. Principles of Ecosystem function. En: Levin, S.A. (ed.) Encyclopedia of Biodiversity, pp. 345-352. Academic Press, San Diego, USA.
+
+Wiegand, T.; Snyman, H.A.; Kellner, K. & Paruelo, J.M. (2004). Do grasslands have a memory: modeling phytomass production of a semiarid South African grassland. Ecosystems, Vol.7, No.3, pp. 243-258.

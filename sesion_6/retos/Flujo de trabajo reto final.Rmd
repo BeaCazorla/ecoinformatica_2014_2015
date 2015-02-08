@@ -1,0 +1,140 @@
+---
+title: 'ECOINFORMÁTICA: Flujo de trabajo para el Reto Final'
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+
+En el presente documento se llevarán a cabo los distintos flujos de trabajo necesarios para realizar el "Reto Final" de la asignatura de Ecoinformática, enmarcada en el Máster de Conservación, Gestión y Restauración de la Biodiversidad. En total se realizarán tres productos, y para cada uno de ellos exponemos los objetivos, metodología, resultados, discusión y conclusiones obtenidas. Todos los productos están centrados en el estudio de las poblaciones de robledales de Sierra Nevada, debido a que los bosques de robledal son considerados como un hábitat natural de interés comunitario de la Directiva Hábitat 92/43/CEE.  Además, son un hábitat casi endémico de la Península Ibérica. Cabe destacar que las poblaciones de Sierra Nevada son de gran importancia biogeográfica, puesto que constituyen la representación ibérica meridional de estos bosques (Molero et al., 1992) y se consideran bosques relictos de hoja caduca en la región sur del Mediterraneo (Blanca & Mendoza, 2000; Blanca, 2001). A pesar de su importancia, tienen un estado de conservación desfavorable (Molero et al., 1992;. Bonet et al, 2010), puesto que múltiples factores del cambio global tienen un impacto en estos, provocando una grave fragmentación (García & Mejías, 2009), que pone en peligro su conservación a largo plazo. Además,la prolongación prevista del período seco verano asocia a una reducción en la precipitación anual y el aumento de las temperaturas medias anuales (Bonet et al., 2010) podría imponer un serio desafío para la regeneración de estos bosques (Molero et al. , 1992; Blanca & Mendoza, 2000), puesto que son árboles de invierno semideciduos con gran demanda de agua en verano.
+
+Por lo tanto, existe una clara necesidad de investigar sobre ellos para intentar gestionar estas masas de la mejor forma posible ante los efectos del cambio global. La totalidad de estos productos tienen como objetivo el estudio en profundidad de estas poblaciones, el cual, generará conocimiento para su gestión. En ellos se pretende caracterizar y comprender el funcionamiento de los ecosistemas y poblaciones de robledal, observando sus tendencias de funcionamiento y sus respuestas a las variables ambientales, así como intentar cuantificar el impacto del cambio global sobre los mismos mediante modelos de futura distribución.
+
+**Flujo de trabajo del producto 1:**
+=
+**Caracterización del funcionamiento del ecosistema y de las variables ambientales que lo condicionan**
+
+0. Abrimos un nuevo script en el software R-project version 3.0.2.
+
+1.  Todos los pasos se realizarán dos veces, para ver las tendencias de NDVI y de los días de nieve.
+
+2.  Cargamos y leemos los datos de NDVI y nieve.
+
+3.	Exploramos los datos en R-project, vemos el número de variables, de observaciones, el tipo de datos (data.frame, raster, etc…), las tendencias generales de NDVI y  nieve…
+
+4.	Obtenemos las tendencias de NDVI y nieve para cada píxel, para ello:
+
+        - Si los id de los píxeles están repetidos (comprobado en el paso 1),  eliminamos las repeticiones
+        - Creamos un data.frame vacío.
+        -	Creamos un data.frame auxiliar donde creamos las columnas que deseamos tener, por ahora vacías.
+        - Aplicamos el test de Mann-Kendall para analizar las tendencias. Obtendremos valores de tau(indicador de tendencia + o -)y de p-valor(indica si la tendencia es significativa o no).
+        - Metemos en el data.frame auxiliar los resultados de tendencias (tau y pvalor para cada píxel)
+        - Rellenamos el data.frame vacío con la información anterior (función rbind())
+        
+6.	Extraemos del data.frame inicial tanto de NDVI como de nieve los valores de latitud y longitud de cada píxel.
+
+7. Unimos los datos de latitud y longitud de cada píxel con los valores de las tendencias(tau y p-valor) de los mismos. 
+
+8.	Le asignamos las coordenadas a cada píxel.
+
+9.	Le asignamos el sistema de proyección.
+
+10.	Dividimos los valores de las tendencias (tau) en distintos rangos para poder visualizarlos posteriormente en el mapa.
+
+11.	Asociamos cada tendencia(tau) su valor correspondiente del rango.
+
+12.	Pintamos el mapa (función plot()).
+
+13. Ya tenemos los resultados de las tendencias de NDVI de los robledales de Sierra Nevada en un mapa.
+
+14.	Creamos un informe en R-markdown, para facilitar la reproducibilidad del proceso.
+
+
+
+**Flujo de trabajo del producto 2:**
+=
+
+**Caracterización de poblaciones de robledal en función de variables biofísicas**
+
+0. Utilizamos el software R project version 3.0.2.
+
+1. Cargamos y leemos los datos de robledal de Sierra Nevada.
+
+2. Exploramos los datos (comandos en R: str(), head(), View()...)
+
+3. Le hacemos un análisis cluster a los datos, para ello:
+
+        - Tenemos en cuenta todas las variables menos x e y (no son variables ambientales para la clasificación de los grupos de robledal).
+        -  Podemos hacerlo para diferentes números de cluster, p.ej: 2,3,4...
+        
+4.	Asignamos a la variable n_cluster el valor de los cluster’s obtenidos para cada píxel
+
+5.	Combinamos la base de datos de partida con los valores de cluster obtenidos, así tendremos para cada píxel una grupo cluster asignado.
+
+6.	Definimos las coordenadas de los píxeles.
+
+7.	Definimos el sistema de coordenadas de los píxeles, WGS84.
+
+8.	Obtenemos tantos colores como n_cluster para pintar el mapa.
+
+9.	Creamos el plot, asignando el color en función del cluster al que pertenece.
+
+10. Si queremos obtener distintos clusters,(por ejemplo 2,3 y 4), para cada uno realizamos desde el paso 3 hasta el 9.
+
+11. Comparamos los resultados de los distintos análisis cluster y justificamos cual se ajusta más a una explicación ecológica y por tanto, es con el que nos quedamos.
+
+12. Creamos un informe en R-markdown bien comentado para facilitar la reproducibilidad del proceso.
+
+
+
+**Flujo de trabajo del Producto 3:**
+=
+
+**Identificación de lugares óptimos para reforzar las poblaciones de robledal en un escenario de cambio climático**
+
+0.	Utilizaremos el programa MAXENT (Máxima Entropía) para realizar los modelos.
+
+1.  Introducimos las variables en las diferentes pestañas:
+
+        - En "Samples": los datos de presencia.
+        - En "Environment": las variables del presente.
+        - En "Output directory": indicamos donde queremos que nos guarde los resultados.
+        - En "Projection layers directory": introducimos el año para el que queremos que nos cree el modelo de distribución de la especie.
+        
+2.	Marcamos la pestaña "crear una curva de respuesta".
+
+3.	Ejecutamos (Botón "Run").
+
+4.	Nos vamos la carpeta de resultados, guardada en el lugar donde le indicamos en el paso 1.
+
+5.	Vemos que ha creado una gran cantidad de archivos:
+      - Abrimos el documento html y leemos algunos resultados.
+      
+6.	Utilizamos los archivos raster con extensión .asc para ver el mapa del modelo en QGIS
+
+7.	Coloreamos el mapa en función de las distintas probabilidades de distribución.
+      - Pulsamos sobre la capa y le damos a propiedades.
+      -"Spectral"-> "Clasify"-> "Aceptar".
+      
+8.	Observamos en el mapa la probabilidad de presencia.
+
+9.	Extraemos mapas para cada año que hayamos proyectado la distribución.
+      - Es recomendable hacer proyecciones para distintos años, así vemos su evolución temporal proyectada.
+
+10.	Elaboramos un informe con las zonas potenciales para reforzar las poblaciones de **Quercus pyrenaica**, información obtenida a partir de las futuras proyecciones de distribución de la especie.
+
+
+
+**Bibliografía utilizada en la introducción**
+=
+
+Blanca, G. (2001). Flora, In: Parque Nacional de Sierra Nevada, Calvo-Flores D, (Ed.), 106-148, Esfagnos, ISBN 978-84-932095-1-3, 
+
+Blanca, G. & Mendoza, R.T. (2000). Libro rojo de la flora silvestre amenazada de Andalucía: Especies vulnerables, Junta de Andalucía, Consejería de Medio Ambiente, ISBN 978-84-89650-75-6, Sevilla, España 
+
+Bonet, F.J.; Pérez-Luque, A.J.; Moreno, R. & Zamora, R. (Septiembre 2010). Observatorio de Cambio Global de Sierra Nevada. Estructura y Contenidos Básicos. Consejería de Medio Ambiente, Junta de Andalucía, Available from 
+http://www.scribd.com/doc/32239398/Observatorio-Sierra-Nevada-Datos-
+basicos 
+
+García, I. & Mejías, P.J. (2009). 9230 Robledales de Quercus pyrenaica y robledales de Quercus robur y Quercus pyrenaica del noroeste ibérico. Bases ecológicaspreliminares para la conservación de los tipos de hábitat de interés comunitario en España, Ministerio de Medio Ambiente y Medio Rural y Marino, ISBN 978-84-491-0911-9, Madrid, España 
+ 
+Molero, J.; Pérez-Raya, F.; Tendero, F.V. & González-Tejero, M.R. (1992). 
+Parque Natural de Sierra Nevada: paisaje, fauna, flora e itinerarios, Rueda, ISBN 978-84-72070-67-0, Madrid, España 
