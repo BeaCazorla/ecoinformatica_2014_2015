@@ -1,0 +1,138 @@
+---
+title: "ECOINFORMÁTICA: Retos - Sesión 3"
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+
+En este documento de R-markdown se realizarán los retos de programación en R-project version 3.0.2. propuestos para la sesión 3. Los resultados que se muestran en R-markdown para el reto_3_p1.R, .p2.R., y .p3.R son nulos porque es el usuario quien ha de introducir los valores para ejecutar las operaciones.
+
+**Reto_3_p1.R: Algoritmo que multiplique 5 números introducidos por el usuario**
+
+```{r}
+multiplica<-1 
+a<-scan(n=5) # la función scan nos permite que sea el usuario quien introduzca los números
+for(valor in a){
+  multiplica<-multiplica*valor
+} # creamos un bucle que multiplique los números introducidos
+print(multiplica) # mostramos el resultado
+
+```
+
+**Reto_3_p2.R: Algoritmo que dado un umbral por el usuario, dados 10 números por el usuario, cuente cuántos de esos números supera el umbral indicado**
+
+```{r}
+suma<-0  # reincializamos a 0
+a<-scan(n=10) # scan permite que el usuario introduzca la cantidad de números que le indicamos (en este caso 10)
+umbral<-10 # establecemos el umbral
+for(valor in a){
+  if(valor>umbral){
+    suma<-suma+1}} # creamos un bucle que nos de el número de valores introducidos que superan dicho umbral
+
+print(suma)
+```
+
+**Reto_3_p3.R: Algoritmo que haga la media de 10 temperaturas indicadas por el usuario**
+
+```{r}
+a<-scan(n=10) # el usuario ha de introducir las 10 temperaturas
+mean(a) # la funcion mean() nos hace la media
+
+```
+**Reto_3_p4.R. Muestra la evolución del NDVI medio para las horas del día.**
+*A continuacion se muestran dos formas de realizarlo. Cada archivo tiene tres imagenes por cada hora, en total 4 horas, 12 fotos:*
+
+```{r}
+### Evolución del NDVI a lo largo de las horas de un día con bucle ###
+
+# install.packages("raster",dep=T) # instalamos los paquetes necesarios
+library(raster) # cargamos el paquete
+getwd() # vemos el directorio de trabajo en el que estamos
+setwd("~/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi") # establecemos nuestro directorio de trabajo
+hora<-c("12","13","14","15") # creamos un vector con las horas de las imágenes
+vector<-c() # creamos un vector vacío que posteriormente rellenaremos con los resultados
+for (x in hora) { # creamos un bucle que nos ejecute la siguiente orden para cada hora
+  imagenes<- list.files(path="/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi", full.names = TRUE,
+                        pattern=paste("_", x, "..\\.jpg\\.asc$", sep="")) # creamos una lista con las imágenes de ndvi para cada hora
+  a<-stack(imagenes) # las agrupamos 
+  b<-mean(a) # hacemos la media de todas las imágenes
+  f<-mean(b[]) # hacemos la media de los resultados anteriores, para obtener una sola media por hora
+  vector<-rbind(vector,f) # guardamos los resultados en el vector vacío
+}
+
+plot(vector,  main="Evolución de NDVI para las horas del día") # mostramos los resultados con un plot
+```
+
+Aquí se muestra otra forma de realizarlo. La más apropiada sería la primera, puesto que un bucle nos facilita el procesamiento de numerosos datos. Hemos sido capaces de hacer el proceso que describimos a continuación debido a que para cada hora no teníamos una gran cantidad de datos, en el caso de que los tuvieramos, no sería útil realizarlo por esta vía.
+
+```{r}
+###### Evolución del NDVI a lo largo de las horas de un día sin bucle ######
+
+# Vemos donde está el directorio de trabajo
+#getwd()
+
+# Establecemos el directorio donde queremos
+setwd("/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi")
+
+# Instalar y llamar paquetes necesarios
+#install.packages("raster", dep=T) # si lo tenemos instalado con anterioridad este paso no es necesario
+library(raster) # si lo hemos cargado anteriormente, tampoco necesitamos volver a cargar el paquete.
+
+library(rgdal)
+# Cargar los archivos de las variables (son una lista de archivos)
+listndvi<- list.files("/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi", pattern='ndvi', full.names=TRUE)
+
+# Concatenamos la lista en una sola variable(ndvi)
+#?stack # la "?nombre_funcion" nos permite obtener ayuda sobre la función
+ndvi<-stack(listndvi)
+
+# Hacemos la media de cada hora, hemos de tener en cuenta los tres valores de cada hora
+mean_12h<-mean(ndvi$ndvi_2014_220_1200.jpg,ndvi$ndvi_2014_220_1220.jpg, ndvi$ndvi_2014_220_1240.jpg)
+mean_13h<-mean(ndvi$ndvi_2014_220_1300.jpg, ndvi$ndvi_2014_220_1320.jpg, ndvi$ndvi_2014_220_1340.jpg)
+mean_14h<-mean(ndvi$ndvi_2014_220_1400.jpg, ndvi$ndvi_2014_220_1420.jpg, ndvi$ndvi_2014_220_1440.jpg)
+mean_15h<-mean(ndvi$ndvi_2014_220_1500.jpg, ndvi$ndvi_2014_220_1520.jpg, ndvi$ndvi_2014_220_1540.jpg )
+
+# Acumulamos la media de las horas, para saber la evolución media de cada hora de nuestras imágenes
+
+# Al intentar hacerlo, me daba el siguiente error: Error no method for coercing this S4 class to a vector, por lo tanto, pasamos nuestras variables a vectores
+vectormean_12h<-as.vector(mean_12h)
+vectormean_13h<-as.vector(mean_13h)
+vectormean_14h<-as.vector(mean_14h)
+vectormean_15h<-as.vector(mean_15h)
+
+# Ahora sí, acumulamos los valores medios de cada hora
+total_mean<-rbind(vectormean_12h,vectormean_13h,vectormean_14h,vectormean_15h)
+
+# Con los cálculos anteriores, hemos obtenido varios valores medios, los de cada imagen para cada hora. Pero necesitamos un sólo valor medio de cada hora por imagen, por lo tanto, le hacemos la media al contenido de los resultados anteriores
+a<-mean(vectormean_12h[])
+b<-mean(vectormean_13h[])
+c<-mean(vectormean_14h[])
+d<-mean(vectormean_15h[])
+
+## Creamos un vector donde irán todas nuestras medias
+total_mean<-c(a,b,c,d)
+
+# Dibujamos los resultados
+plot(total_mean, main="Evolución de NDVI para las horas del día", ylab="Valores medios")
+
+```
+
+
+Añadido: eliminar valores del raster que estén por encima de un umbral
+```{r}
+
+#hora<-c("12","13","14","15")
+#umbral<-0.15
+#vector<-c()
+#for (x in hora) {
+#  imagenes<- list.files(path="/home/bcazorla/ecoinformatica_2014_2015/sesion_3/retos/Reto_3_p1/ndvi", full.names = TRUE,
+#                        pattern=paste("_", x, "..\\.jpg\\.asc$", sep=""))
+#  a<-stack(imagenes)
+#           b<-mean(a)
+#           f<-mean(b[])
+#           vector<-rbind(vector,f)
+#  }
+ 
+# vector_umbral<- if(vector<umbral){ * vector
+#}
+```
+No lo he podido conseguir...
