@@ -1,0 +1,74 @@
+---
+title: 'ECOINFORMÁTICA: Sesión 5 - Reto extra'
+author: "Beatriz Pérez Cazorla"
+output: html_document
+---
+
+**¿Cómo ha evolucionado la sequía anual en California en los últimos 15 años?** 
+```{r}
+
+# Instalamos y cargamos los paquetes
+# install.packages(c('Kendall','wq'))
+library('Kendall') # Para el análisis MannKendall de tendencias
+library('wq') # Para Kendall y análisis de la pendiente Theil
+library('ggplot2') # Gráficos
+library('reshape2') # Manipular datos
+library('zoo') # Para series temporales
+
+# Establecemos nuestro directorio de trabajo
+getwd()
+setwd("/home/bcazorla/ecoinformatica_2014_2015/sesion_6/retos/producto_1")
+```
+Una vez establecido el directorio y cargados los paquetes, pasamos a trabajar con nuestros datos.
+
+```{r}
+# Leemos los datos
+anual <- read.table('http://www.iecolab.es/ecoinfo/scpdsi_annual.csv', header = TRUE, sep=',')
+# Extraemos los valores de los últimos 15 años
+anual15<-anual[c(105:120),] # sabemos el lugar en la tabla de los valores de los últimos 15 años porque hemos realizado una exploración de los datos, por ejemplo, con la función View()
+
+# Exploramos los datos
+str(anual15)
+head(anual15)
+
+# Hacemos un plot exploratorio de los datos de sequía en los últimos 15 años
+plot(anual15$year, anual15$scpdsi, type='o',
+     xlab='year', pch=19, col='#325B84',
+     ylab='scpdsi', ylim=c(-6,6))
+abline(h=0)
+abline(h=-2, lty=2, col='red')
+
+### Realizamos el análisis de tendencias de sequía
+m <- MannKendall(anual15$scpdsi)
+m # mostramos los resultados
+
+```
+Observamos que la tendencia general de sequía es negativa. Podríamos decir que en los útimos 15 años se está dando una cierta disminución de la sequía, pero no podemos afirmarlo, pues no es una tendencia significativa (nuestro p valor es mayor de 0.05)
+
+
+**¿Qué meses han mostrado una mayor tasa de cambio?** 
+```{r}
+# Leemos los datos mensuales
+mensual <- read.table('http://www.iecolab.es/ecoinfo/scpdsi_monthly.csv', header = TRUE, sep=',')
+
+# Extraemos los valores mensuales para los últimos 15 años
+mensual15<-mensual[c(465:480),] # sabemos el lugar en la tabla de los valores de los últimos 15 años porque hemos realizado una exploración de los datos, por ejemplo, con la función View()
+
+# Exploramos los datos mensuales
+mensuales15 <- dcast(mensual15, year ~ month, value.var = 'value')   
+
+# Convertimos los datos en objetos zoo
+mizoo <- zoo(mensuales15[-1], mensuales15[,1])
+str(mizoo) # exploramos el nuevo objeto
+
+# Hacemos un plot exploratorio
+plot(mizoo, type='o', pch=19, main='scPDSI index',
+     col='#325B84', cex.lab=2.5, cex.axis=1.5)
+
+### Calculamos la tendencia y estimamos la pendiente
+theil <- mannKen(as.ts(mizoo))
+theil
+
+
+```
+Obtenemos los valores del mes con la mayor tasa de cambio, pero no hemos podido comprobar cual es, tras una serie de errores y falta de tiempo. Todo apunta a que los meses con mayor tasa de cambio serán los de verano.
