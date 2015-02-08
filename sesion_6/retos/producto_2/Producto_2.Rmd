@@ -149,7 +149,7 @@ plot(robles_cluster3$P_ver~robles_cluster3$tminV, col=as.numeric(robles_cluster3
 ```
 En el ejemplo anterior observamos, la existencia de un grupo funcional que responde a los valores más altos de precipitación durante el verano y el menor rango de temperaturas dentro de las mínimas de verano, mientras que los demás grupos se encuentran en todas las temperaturas mínimas y precipitaciones de verano. Este tipo de relaciones se podrían ir definiendo para las distintas variables y determinar a qué par de variables podrían responder algunos grupos de nuestro análisis cluster.
 
-** Discusión y conclusiones**
+**Discusión y conclusiones**
 =
 
 Tanto la clasificación en dos grupos como en tres de respuesta a factores ambientales de las poblaciones de roble nos sería válida. La primera aproximación sería más general, y por tanto podría servirnos, pero para la gestión los resultados más exahustivos posibles, por lo tanto conviene decantarnos por la clasificación de tres poblaciones con distintas respuestas.
